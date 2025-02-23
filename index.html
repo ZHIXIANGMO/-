@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>纹理图案生成器</title>
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- 顶部工具栏 -->
+      <header class="toolbar">
+        <div class="logo">纹理图案生成器</div>
+        <div class="tools">
+          <button @click="exportAsPNG">导出PNG</button>
+          <button @click="exportAsSVG">导出SVG</button>
+          <button @click="savePreset">保存预设</button>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <!-- 左侧控制面板 -->
+        <aside class="control-panel">
+          <!-- 基础图形选择 -->
+          <section class="panel-section">
+            <h3>基础图形</h3>
+            <div class="shape-selector">
+              <button
+                v-for="shape in shapes"
+                :key="shape.id"
+                :class="{ active: selectedShape === shape.id }"
+                @click="selectShape(shape.id)"
+              >
+                {{ shape.name }}
+              </button>
+            </div>
+          </section>
+
+          <!-- 布局控制 -->
+          <section class="panel-section">
+            <h3>布局控制</h3>
+            <div class="control-item">
+              <label>数量</label>
+              <input type="range" v-model="count" min="1" max="1000" />
+              <input type="number" v-model="count" />
+            </div>
+            <div class="control-item">
+              <label>X轴间距</label>
+              <input type="range" v-model="spacingX" min="0" max="200" />
+              <input type="number" v-model="spacingX" />
+            </div>
+            <div class="control-item">
+              <label>Y轴间距</label>
+              <input type="range" v-model="spacingY" min="0" max="200" />
+              <input type="number" v-model="spacingY" />
+            </div>
+            <div class="control-item">
+              <label>分布模式</label>
+              <select v-model="distribution">
+                <option value="grid">网格排列</option>
+                <option value="random">随机分布</option>
+                <option value="circle">环形排列</option>
+              </select>
+            </div>
+          </section>
+
+          <!-- 画布设置 -->
+          <section class="panel-section">
+            <h3>画布设置</h3>
+            <div class="control-item">
+              <label>画布宽度</label>
+              <input
+                type="number"
+                v-model="canvasWidth"
+                min="100"
+                max="4096"
+                @change="updateCanvasSize"
+              />
+              <span class="unit">px</span>
+            </div>
+            <div class="control-item">
+              <label>画布高度</label>
+              <input
+                type="number"
+                v-model="canvasHeight"
+                min="100"
+                max="4096"
+                @change="updateCanvasSize"
+              />
+              <span class="unit">px</span>
+            </div>
+            <div class="control-item">
+              <button
+                class="preset-size-btn"
+                @click="setCanvasSize(1920, 1080)"
+              >
+                1920 × 1080
+              </button>
+              <button class="preset-size-btn" @click="setCanvasSize(1280, 720)">
+                1280 × 720
+              </button>
+              <button class="preset-size-btn" @click="setCanvasSize(800, 800)">
+                800 × 800
+              </button>
+            </div>
+          </section>
+
+          <!-- 样式调节 -->
+          <section class="panel-section">
+            <h3>样式设置</h3>
+            <div class="control-item">
+              <label>大小</label>
+              <input type="range" v-model="size" min="10" max="200" />
+              <input type="number" v-model="size" />
+            </div>
+            <div class="control-item">
+              <label>大小渐变</label>
+              <input type="checkbox" v-model="sizeGradient" />
+              <div v-if="sizeGradient" class="gradient-controls">
+                <div class="gradient-direction">
+                  <label>渐变方向</label>
+                  <select v-model="gradientDirection">
+                    <option value="center-out">中心向外</option>
+                    <option value="out-center">外向中心</option>
+                    <option value="left-right">左向右</option>
+                    <option value="right-left">右向左</option>
+                    <option value="top-bottom">上向下</option>
+                    <option value="bottom-top">下向上</option>
+                  </select>
+                </div>
+                <label>最小大小比例</label>
+                <input
+                  type="range"
+                  v-model="minSizeRatio"
+                  min="0.1"
+                  max="1"
+                  step="0.1"
+                />
+                <span>{{ (minSizeRatio * 100).toFixed(0) }}%</span>
+              </div>
+            </div>
+            <div class="control-item">
+              <label>旋转角度</label>
+              <input type="range" v-model="rotation" min="0" max="360" />
+              <input type="number" v-model="rotation" />
+            </div>
+            <div class="control-item">
+              <label>颜色</label>
+              <input type="color" v-model="color" />
+            </div>
+            <div class="control-item">
+              <label>透明度</label>
+              <input type="range" v-model="opacity" min="0" max="100" />
+              <input type="number" v-model="opacity" />
+            </div>
+          </section>
+        </aside>
+
+        <!-- 右侧预览区 -->
+        <div class="preview-area">
+          <canvas ref="canvas" width="800" height="600"></canvas>
+          <div class="preview-controls">
+            <button @click="zoomIn">放大</button>
+            <button @click="zoomOut">缩小</button>
+            <button @click="resetZoom">重置</button>
+          </div>
+        </div>
+      </main>
+
+      <!-- 状态栏 -->
+      <footer class="status-bar">
+        <div class="zoom-level">缩放: {{ zoomLevel }}%</div>
+        <div class="canvas-size">
+          画布: {{ canvasWidth }} × {{ canvasHeight }}
+        </div>
+      </footer>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="scripts/main.js"></script>
+  </body>
+</html>
